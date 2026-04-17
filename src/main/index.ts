@@ -6,15 +6,15 @@ import {
 	session,
 	globalShortcut,
 	screen,
-} from "electron";
-import { join } from "path";
-import { electronApp, is } from "@electron-toolkit/utils";
-import { autoUpdater } from "electron-updater";
+} from 'electron';
+import { join } from 'path';
+import { electronApp, is } from '@electron-toolkit/utils';
+import { autoUpdater } from 'electron-updater';
 
 // --- CRITICAL NOTIFICATION FIX ---
 // This must be set at the top level for Windows to trust your notifications
-const appId = "com.swarm.app";
-if (process.platform === "win32") {
+const appId = 'com.swarm.app';
+if (process.platform === 'win32') {
 	app.setAppUserModelId(appId);
 }
 
@@ -28,7 +28,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
 	app.quit();
 } else {
-	app.on("second-instance", () => {
+	app.on('second-instance', () => {
 		if (mainWindow) {
 			if (mainWindow.isMinimized()) mainWindow.restore();
 			mainWindow.focus();
@@ -40,13 +40,13 @@ function checkUpdates(): void {
 	if (!is.dev) {
 		autoUpdater.checkForUpdatesAndNotify();
 	}
-	autoUpdater.on("update-downloaded", () => {
+	autoUpdater.on('update-downloaded', () => {
 		dialog
 			.showMessageBox({
-				type: "info",
-				title: "Update Ready",
-				message: "A new version of The Swarm has been downloaded. Restart to apply?",
-				buttons: ["Restart", "Later"],
+				type: 'info',
+				title: 'Update Ready',
+				message: 'A new version of The Swarm has been downloaded. Restart to apply?',
+				buttons: ['Restart', 'Later'],
 				defaultId: 0,
 			})
 		.then((result) => {
@@ -72,7 +72,7 @@ function createOverlayWindow(): void {
 			x: 20,
 			y: height - overlayHeight - 20,
 			skipTaskbar: true,
-			type: "toolbar",
+			type: 'toolbar',
 			transparent: true,
 			frame: false,
 			alwaysOnTop: true,
@@ -82,10 +82,10 @@ function createOverlayWindow(): void {
 			hasShadow: false,
 			focusable: false,
 			paintWhenInitiallyHidden: true,
-			backgroundColor: "#00000000",
+			backgroundColor: '#00000000',
 			webPreferences: {
 				sandbox: false,
-				preload: join(__dirname, "../preload/index.js"),
+				preload: join(__dirname, '../preload/index.js'),
 				devTools: true,
 			},
 		});
@@ -93,21 +93,21 @@ function createOverlayWindow(): void {
 		overlayWindow.setMenuBarVisibility(false);
 		overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 		
-		overlayWindow.on("closed", () => {
+		overlayWindow.on('closed', () => {
 			overlayWindow = null;
 		});
 		
-		if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+		if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
 			overlayWindow.loadURL(
-				`${process.env["ELECTRON_RENDERER_URL"]}/#/overlay`
+				`${process.env['ELECTRON_RENDERER_URL']}/#/overlay`
 			);
 		} else {
-			overlayWindow.loadFile(join(__dirname, "../renderer/index.html"), {
-				hash: "/overlay",
+			overlayWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+				hash: '/overlay',
 			});
 		}
 	} catch (error) {
-		console.error("Overlay failed to initialize: ", error);
+		console.error('Overlay failed to initialize: ', error);
 	}
 }
 
@@ -119,79 +119,75 @@ function createWindow(): void {
 		autoHideMenuBar: true,
 		webPreferences: {
 			sandbox: false,
-			preload: join(__dirname, "../preload/index.js"),
+			preload: join(__dirname, '../preload/index.js'),
 			devTools: true,
 		},
 	});
 
-	mainWindow.webContents.on("before-input-event", (event, input) => {
-		if (input.key === "F12" && input.type === "keyDown") {
+	mainWindow.webContents.on('before-input-event', (event, input) => {
+		if (input.key === 'F12' && input.type === 'keyDown') {
 			mainWindow!.webContents.toggleDevTools();
 			event.preventDefault();
 		}
 	});
 	
-	if (is.dev) {
-		mainWindow!.webContents.openDevTools({ mode: "detach" });
-	}
-	
 	session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 		const responseHeaders = { ...details.responseHeaders };
-		if (details.url.includes("twitch.tv")) {
-			delete responseHeaders["content-security-policy"];
-			delete responseHeaders["x-frame-options"];
+		if (details.url.includes('twitch.tv')) {
+			delete responseHeaders['content-security-policy'];
+			delete responseHeaders['x-frame-options'];
 		}
 		callback({ cancel: false, responseHeaders });
 	});
 	
-	mainWindow.on("close", () => {
+	mainWindow.on('close', () => {
 		if (overlayWindow && !overlayWindow.isDestroyed()) {
 			overlayWindow.destroy();
 		}
 		overlayWindow = null;
 	});
 	
-	mainWindow.on("closed", () => {
+	mainWindow.on('closed', () => {
 		mainWindow = null;
 		app.quit();
 	});
 	
-	mainWindow.on("ready-to-show", () => {
+	mainWindow.on('ready-to-show', () => {
 		mainWindow!.show();
 		mainWindow!.focus();
 		createOverlayWindow();
 		checkUpdates();
 	});
 	
-	if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-		mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+	if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+		mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
 	} else {
-		mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+		mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
 	}
 }
 
 function handleTwitchCallback(url: string, authWindow: BrowserWindow) {
-	if (!url.startsWith("http://localhost/callback")) {
+	if (!url.startsWith('http://localhost/callback')) {
 		return false;
 	}
 
-	console.log("callback URL: ", url);
+	console.log('callback URL: ', url);
 
 	const hash = new URL(url).hash;
 	const params = new URLSearchParams(
-		hash.startsWith("#") ? hash.slice(1) : hash
+		hash.startsWith('#') ? hash.slice(1) : hash
 	);
 
-	const accessToken = params.get("access_token");
+	const accessToken = params.get('access_token');
 
 	if (!accessToken) {
-		console.error("No access token found in callback URL");
+		console.error('No access token found in callback URL');
 		authWindow.close();
 		return true;
 	}
 
-	console.log("access token received");
-	mainWindow?.webContents.send("twitch-token-received", accessToken);
+	console.log('access token received');
+	mainWindow?.webContents.send('twitch-token-received', accessToken);
 	
 	if (!authWindow.isDestroyed()) {
 		authWindow.close();
@@ -207,7 +203,7 @@ app.whenReady().then(() => {
 
 	let isOverlayVisible = false;
 
-	globalShortcut.register("F8", () => {
+	globalShortcut.register('F8', () => {
 		if (!overlayWindow || overlayWindow.isDestroyed()) {
 			return;
 		}
@@ -216,7 +212,7 @@ app.whenReady().then(() => {
 
 		if (isOverlayVisible) {
 			overlayWindow.setFocusable(true);
-			overlayWindow.setAlwaysOnTop(true, "screen-saver");
+			overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 			overlayWindow.setIgnoreMouseEvents(false);
 			overlayWindow.setOpacity(1.0);
 			overlayWindow.focus();
@@ -234,14 +230,14 @@ app.whenReady().then(() => {
 		}
 	});
 
-	ipcMain.on("start-twitch-auth", (_, data) => {
-		const clientId = typeof data === "string" ? data : data?.clientId;
+	ipcMain.on('start-twitch-auth', (_, data) => {
+		const clientId = typeof data === 'string' ? data : data?.clientId;
 	
-		console.log("start-twitch-auth data: ", data);
-		console.log("resolved clientId: ", clientId);
+		console.log('start-twitch-auth data: ', data);
+		console.log('resolved clientId: ', clientId);
 	
 		if (!clientId) {
-			console.error("Missing Twitch client ID");
+			console.error('Missing Twitch client ID');
 			return;
 		}
 	
@@ -253,52 +249,52 @@ app.whenReady().then(() => {
 			autoHideMenuBar: true,
 		});
 	
-		authWindow.webContents.on("will-redirect", (event, url) => {
-			if (url.startsWith("http://localhost/callback")) {
+		authWindow.webContents.on('will-redirect', (event, url) => {
+			if (url.startsWith('http://localhost/callback')) {
 				event.preventDefault();
 				handleTwitchCallback(url, authWindow);
 			}
 		});
 		
-		authWindow.webContents.on("will-navigate", (event, url) => {
-			if (url.startsWith("http://localhost/callback")) {
+		authWindow.webContents.on('will-navigate', (event, url) => {
+			if (url.startsWith('http://localhost/callback')) {
 				event.preventDefault();
 				handleTwitchCallback(url, authWindow);
 			}
 		});
 		
 		authWindow.webContents.on(
-			"did-fail-load",
+			'did-fail-load',
 			(_event, errorCode, errorDescription, validatedURL) => {
 				console.log(
-				"did-fail-load: ",
-				errorCode,
-				errorDescription,
-				validatedURL
+					'did-fail-load: ',
+					errorCode,
+					errorDescription,
+					validatedURL
 				);
 			
-				if (validatedURL.startsWith("http://localhost/callback")) {
+				if (validatedURL.startsWith('http://localhost/callback')) {
 					const handled = handleTwitchCallback(validatedURL, authWindow);
-					if (handled) return;
+					if (handled) 
+						return;
 				}
 			}
 		);
 	
-		authWindow.on("closed", () => {
-			console.log("auth window closed");
+		authWindow.on('closed', () => {
+			console.log('auth window closed');
 		});
 		
-		const redirectUri = "http://localhost/callback";
-		const scopes = encodeURIComponent("user: read: email chat: read chat: edit");
+		const redirectUri = 'http://localhost/callback';
+		const scopes = encodeURIComponent('user:read:email chat:read chat:edit')
 		const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scopes}`;
 		
-		console.log("Twitch auth URL: ", authUrl);
+		console.log('Twitch auth URL: ', authUrl);
 		
-		authWindow.webContents.openDevTools();
 		authWindow.loadURL(authUrl);
 	});
 });
 
-app.on("window-all-closed", () => {
+app.on('window-all-closed', () => {
 	app.quit();
 });
